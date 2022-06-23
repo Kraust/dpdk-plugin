@@ -304,7 +304,7 @@ void DPDK::Open()
 		/* Creates a new mempool in memory to hold the mbufs. */
 		mbuf_pool =
 			rte_pktmbuf_pool_create("ZEEK_MBUF_POOL", NUM_MBUFS, MBUF_CACHE_SIZE, 0,
-		                            JUMBO_FRAME_MAX_SIZE + RTE_PKTMBUF_HEADROOM, rte_socket_id());
+		                            MBUF_SIZE, rte_socket_id());
 		if ( mbuf_pool == NULL )
 			reporter->FatalError("Cannot create mbuf pool\n");
 		}

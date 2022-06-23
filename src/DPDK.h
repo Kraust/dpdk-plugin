@@ -35,6 +35,7 @@
 
 /* allow max jumbo frame 9726 */
 #define JUMBO_FRAME_MAX_SIZE 9978U
+#define MBUF_SIZE 10240U
 
 #include "zeek/iosource/PktSrc.h"
 
