@@ -100,31 +100,14 @@ DPDK::DPDK(const std::string& iface_name, bool is_live)
  */
 inline int DPDK::port_init(uint16_t port)
 	{
-
-	struct rte_eth_dev_info dev_info;
-	struct rte_eth_rxconf rxq_conf;
-
-	const uint16_t rx_rings = total_queues;
-
-	int retval;
-	uint16_t q;
-	uint64_t rss_hf_tmp;
-
-	retval = rte_eth_dev_info_get(port, &dev_info);
-	if ( retval != 0 )
-		{
-		reporter->FatalError("Error: Could not get device (port %u) info: %s. Proceeding to the next port.\n", port, strerror(-retval));
-		return retval;
-		}
-
 	struct rte_eth_conf port_conf = {
 		.rxmode =
 			{
 				.mq_mode = ETH_MQ_RX_RSS,
 #if RTE_VERSION >= RTE_VERSION_NUM(21,8,0,0)
-				.mtu = dev_info.max_rx_pktlen,
+				.mtu = JUMBO_FRAME_MAX_SIZE,
 #else
-				.max_rx_pkt_len = dev_info.max_rx_pktlen,
+				.max_rx_pkt_len = JUMBO_FRAME_MAX_SIZE,
 #endif
 				.split_hdr_size = 0,
 				//.offloads = DEV_RX_OFFLOAD_RSS_HASH,
@@ -143,11 +126,30 @@ inline int DPDK::port_init(uint16_t port)
 			},
 	};
 
+	struct rte_eth_dev_info dev_info;
+	struct rte_eth_rxconf rxq_conf;
+
+	const uint16_t rx_rings = total_queues;
+
+	int retval;
+	uint16_t q;
+	uint64_t rss_hf_tmp;
+
 	if ( rte_eal_process_type() == RTE_PROC_SECONDARY )
 		{
 		reporter->Info("Configuring DPDK port %u, queue %u/%u", port, my_queue_num, total_queues);
 		return 0;
 		}
+
+	retval = rte_eth_dev_info_get(port, &dev_info);
+	if ( retval != 0 )
+		{
+		reporter->FatalError("Error: Could not get device (port %u) info: %s. Proceeding to the next port.\n", port, strerror(-retval));
+		return retval;
+		}
+
+	if ( debug ) printf("Debug Jumbo max=%u, dev_info=%u, min=%u\n", JUMBO_FRAME_MAX_SIZE,
+	             dev_info.max_rx_pktlen, RTE_MIN(dev_info.max_rx_pktlen, JUMBO_FRAME_MAX_SIZE));
 
 	char dev_name[RTE_DEV_NAME_MAX_LEN];
 	retval = rte_eth_dev_get_name_by_port(port, dev_name);
@@ -169,9 +171,9 @@ inline int DPDK::port_init(uint16_t port)
 		{
 
 #if RTE_VERSION >= RTE_VERSION_NUM(21,8,0,0)
-		port_conf.rxmode.mtu = dev_info.max_rx_pktlen;
+		port_conf.rxmode.mtu = RTE_MIN(dev_info.max_mtu, JUMBO_FRAME_MAX_SIZE);
 #else
-		port_conf.rxmode.max_rx_pkt_len = dev_info.max_rx_pktlen;
+		port_conf.rxmode.max_rx_pkt_len = RTE_MIN(dev_info.max_rx_pktlen, JUMBO_FRAME_MAX_SIZE);
 #endif
 		}
 

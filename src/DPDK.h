@@ -34,7 +34,7 @@
 #define MTU_OVERHEAD (RTE_ETHER_HDR_LEN + RTE_ETHER_CRC_LEN + 2 * sizeof(struct rte_vlan_hdr))
 
 /* allow max jumbo frame 9726 */
-#define JUMBO_FRAME_MAX_SIZE 0x2600
+#define JUMBO_FRAME_MAX_SIZE 9978U
 
 #include "zeek/iosource/PktSrc.h"
 
